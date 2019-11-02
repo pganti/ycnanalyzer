@@ -1,0 +1,13 @@
+2010-06-26  Subbu  <mcvsubbu@users.sourceforge.net>
+    * Included configure script in the distribution
+    * Added project web page http://yconalyzer.sourceforge.net
+
+2010-06-01  Naresh <cyan_00391@users.sourceforge.net>
+    * GNU auto-build and configure utilities, spec file for rpm.
+
+2010-05-18  Subbu  <mcvsubbu@users.sourceforge.net>
+    * Fixed issue for users running Ubuntu with gcc-4.4.1
+    * Release 1.0.2
+
+2010-04-23  Subbu  <mcvsubbu@users.sourceforge.net>
+    * Initial Release 1.0.0

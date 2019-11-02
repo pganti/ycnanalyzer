@@ -1,0 +1,10 @@
+[install from source]
+====================
+# bash$ autoreconf -fi
+bash$ ./configure --prefix=/usr
+bash$ gmake
+bash$ sudo gmake install
+
+[uninstall from source]
+======================
+bash$ sudo gmake uninstall

@@ -1,0 +1,28 @@
+README:
+=======
+
+Yconalyzer is a low-overhead pcap utility that provides a bird's eye view
+of traffic on a particular TCP port, displaying a distribution of duration,
+volume and throughput over all connections while being able to narrow down
+to a connection as well.
+
+INTRODUCTION:
+============
+(Must Read for Beginners)
+http://developer.yahoo.net/blog/archives/2010/05/tcp_traffic_analyzer.html
+
+PROJECT-HOME:
+============
+http://sourceforge.net/projects/yconalyzer/
+
+PROJECT-SUPPORT:
+================
+http://sourceforge.net/projects/yconalyzer/support
+
+SOURCE-CODE-CHECKOUT:
+=====================
+svn co https://yconalyzer.svn.sourceforge.net/svnroot/yconalyzer yconalyzer
+
+INSTALLATION:
+============
+Please go through the 'INSTALL' file in the same directory.

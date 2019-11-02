@@ -1,0 +1,405 @@
+.\"
+.\" Man page for yconalyzer
+.\"
+.\" $Id: yconalyzer.1,v 1.9 2009-03-30 23:17:04 mcvsubbu Exp $
+.\"
+.TH YCONALYZER 1 "5 January 2007"
+.SH NAME
+yconalyzer \- A program to analyze TCP traffic on a server or client port.
+.SH SYNOPSIS
+.B yconalyzer
+-p
+.I port
+[ -i
+.I interface
+] [ -t
+.I seconds
+] [
+.I expression
+]
+.br
+.B yconalyzer
+-p
+.I port
+[ -i
+.I interface
+] [ -w
+.I file
+] [ -t
+.I seconds
+]
+.br
+.RS
+[
+.I expression
+]
+.RE
+.br
+.B yconalyzer
+-p 
+.I port
+[ -dRTP ] [ -i 
+.I interface
+] [ -t
+.I seconds
+]
+.br
+.RS
+[ -r
+.I file
+] [ -n
+.I nbuckets
+] [ -s
+.I bucket_size
+]
+.br
+[ -X
+.I nbytes
+] [ -x
+.I nbytes
+]
+.br
+[ -Y
+.I nbytes
+] [ -y
+.I nbytes
+]
+.br
+[ -c
+.I num_attempts
+] [ -I
+.I datespec
+]
+.br
+[-P|-C|-S] [ -D
+.I bucket_id
+] [ 
+.I expression
+]
+.RE
+.SH DESCRIPTION
+\fIYconalyzer\fP selects the packets on a network interface that
+match the boolean \fIexpression\fP
+and prints out statistics about the TCP connections.
+.P
+When run  with  the  
+.B -w
+flag (recommended mode),
+it saves the packet data to \fIfile\fP for later analysis.
+.P
+When run with the
+.B -r
+flag, it reads from  a  saved  packet
+\fIfile\fP  rather  than  to  read  packets from a network interface, and
+then print out statistics.
+.P
+In all cases, only packets that match \fIyconalyzer\fP's internal filter
+as well as the \fIexpression\fP will be processed by \fIyconalyzer\fP.
+The internal filter processes only those TCP packets that have the source or
+destination port matching \fIport\fD, and have one of SYN, FIN, or RST
+flags set in the TCP header.
+.P
+The same permission restrictions apply as they do for \fItcpdump\fP. 
+As with \fItcpdump\fP, you must have super-user permissions in order to invoke
+\fIyconalyzer\fP without the \fI-r\fP option.  All files
+captured by \fItcpump\fP are readable by \fIyconalyzer\fP and vice versa
+(as long as file permissions are set correctly).
+
+\fIYconalyzer\fP will stop capturing packets if it is interrupted by a
+SIGINT signal (generated, for example,
+by typing your interrupt character, typically control-C) or a SIGTERM sig-
+nal (typically generated with the 
+.BR kill (1)
+command)
+.LP
+When
+.I yconalyzer
+finishes capturing packets (or reading from a captured \fIfile\fP),
+it will report statistics regarding the
+connections observed. The report is in two parts. The first part has 
+an overall aggegated statistics, and information about lost connections,
+etc. The second part is a table in which the observed connections are
+placed in buckets according to the duration of the connection.
+A bucket is defined by the minimum and maximum duration of a connection
+(or, if -P option is chosen, then the minimum and maximum throughput of a
+connection).
+For each bucket, the following statistics are reported:
+.P
+.RS
+The number of connections in the bucket, and a percent of the total number
+of connections observed.
+.P
+The average number of bytes sent from the clients for the connections in
+the bucket.
+.P
+The average number of bytes sent from the server for the connections in
+the bucket
+.P
+The average estimated Round Trip Time of the connections in the bucket
+(if \-T option is specified). See section on \fIRTT ESTIMATION\fP.
+.RE
+.P
+For a sample output, see the section on \fISAMPLE OUTPUT\fP.
+.P
+While running in capture mode (i.e. without the -r option),
+\fIyconalyzer\fP will also report the number of packets
+captured and dropped, like \fItcpdump (1)\fP does. The same notes as in
+\fItcpdump\fP apply for these numbers.
+.P
+It is useful to monitor the number of packets dropped after
+\fIyconalyzer\fP runs. It should normally be zero, even if
+\fIyconalyzer\fP is run for extended period of time (tens of minutes, or
+even hours). If it is non-zero, it could be an indication (but not
+necessarily so) that running \fIyconalyzer\fP has skewed the performance
+of the system.
+
+.SH OPTIONS
+.TP
+.B \-c
+Print out the connections that took at least \fInum_attempts\fP attempts
+to establish
+.TP
+.B \-C
+Use the number of bytes sent by the client to place connections in buckets.
+.TP
+.B \-d
+Print out a trace of the packets in format similar to \fItcpdump\fP -n.
+Repeating this option gives more information, useful for debugging
+yconalyzer.
+.TP
+.B \-D
+Print out the host and port numbers of all the connections in the
+specified bucket. The \fIbucket_id\fP is the first number in the bucket
+(which has two numbers, or only one if it is the last bucket).
+One line is printed for each connection in the bucket.
+This is printed in a format that can be cut and pasted
+to be used as \fIexpression\fP with either \fIyconalyzer\fP or with
+\fItcpdump\fP. Typical use of this option is to drill down on a specific
+bucket to list all the connections in that bucket in order to find out why
+these are slow. If the original data is captured using \fItcpdump\fP, then
+the connection can be looked at to see how the transaction happened.
+.TP
+.B \-i
+Listen on \fIinterface\fP.
+If unspecified, \fIyconalyzer\fP searches the system interface list for the
+lowest numbered, configured up interface (excluding loopback).
+Ties are broken by choosing the earliest match.
+.TP
+.B \-I
+Consider packets later than specified time. \fIdatespec\fP
+can be in HH:MM:SS or YYYY-MM-DD.HH:MM:SS format. All packets that have a
+timestamp before this time are discarded, so any connections established
+before the specified time will not show up in the final analysis.
+.TP
+.B \-n
+Number of buckets. Actually, one more than \fInbuckets\fP buckets are
+printed, with the rest of the connections grouped in the last bucket.
+.TP
+.B \-p
+The TCP \fIport\fP to be monitored. This should always be specified.
+.TP
+.B \-P
+Use throughput buckets instead of response time. The throughput for each
+connection is computed as the total number of bytes sent in either
+direction divided by the total duration of the connection. So, this option
+is meaningful only when one side of the connection sends a much smaller
+number of bytes than the other one. Connections are bucketized in terms of
+the calculated throughput.
+.TP
+.B \-r
+Read packets from \fIfile\fR (which was created with the -w option).
+.TP
+.B \-R
+Output in raw format. Useful for piping the output to a script.
+.TP
+.B \-S
+Use the number of bytes sent by the server to place connections in buckets.
+.TP
+.B \-s
+Bucket size in msecs (or, in Kbytes/sec if \-P is specified).
+.TP
+.B -T
+Attempt to estimate RTT for the connections. If the trace
+was captured on the client machine the estimated RTT is exactly the same
+as that experienced by the client in the beginning of the connection.
+Variation in RTT as the connection progresses is not tracked. If the trace
+was captured on the server side, then yconalyzer tries to estimate the RTT
+based on the way connection close is initiated by the upper layer
+protocol. In case of HTTP, this estimate should be quite close to the real
+RTT.  See the section on RTT ESTIMATION.
+.TP
+.B \-w
+Write the raw packets to \fIfile\fR rather than processing them and printing
+out statistics.
+The \fIfile\fR can later be processed with the \-r option.
+.TP
+.B \-x
+Select only those connections in which the client sends more than
+\fInbytes\fP bytes to the server.
+.TP
+.B \-X
+Select only those connections in which the server sends more than
+\fInbytes\P bytes to the client.
+.TP
+.B \-y
+Select only those connections in which the client sends less than
+\fInbytes\fP bytes to the server.
+.TP
+.B \-Y
+Select only those connections in which the server sends less than
+\fInbytes\P bytes to the client.
+.IP "\fI expression\fP"
+.RS
+selects which packets will be selected for processing.
+If no \fIexpression\fP
+is given, all packets selected by \fIyconalyzer\fP will be processed. Note
+that the \fIexpression\fP is applied in addition to the filter than
+\fIyconalyzer\fP already uses. The internal filter specifies the TCP
+\fIport\fP and processes only those packets that has the SYN, FIN, or RST
+flags set in the TCP header. See \fItcpdump (1)\fP.
+
+.SH EXAMPLES
+.LP
+To capture all relevant packets on port 80 for 10 minutes and save the
+packets in file http.1 for later analysis:
+.RS
+.nf
+\fByconalyzer -p 80 -w http.1 -t 600\fP
+.fi
+.RE
+.LP
+To print out the processed data from the above file:
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1\fP
+.fi
+.RE
+.LP
+To change the bucket size to 2 seconds (instead of a default of 20 msec) and
+divide into 5 buckets (instead of deault of 20):
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1 -s2000 -n5\fP
+.fi
+.RE
+.LP
+To process only those connections in which the client sends less than 4k
+bytes:
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1 -s2000 -n5 -y4096\fP
+.fi
+.RE
+.LP
+To process those connections in which the server sends more than 64k of
+data.
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1 -s2000 -n5 -X64000\fP
+.fi
+.RE
+.LP
+To filter out only those connections from host 23.34.45.56
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1 -s2000 -n5 host 23.34.45.56\fP
+.fi
+.RE
+.LP
+To monitor only outgoing connections from an HTTP proxy (in which both
+incoming and outgoing connections are on port 80) for 3 minutes:
+.RS
+.nf
+\fByconalyzer -p 80 -w proxy-out.1 -t180 '(src host proxy.domain.com and dst port 80) or (dst host proxy.domain.com and src port 80)'\fP
+.fi
+.RE
+.LP
+To monitor only incoming connections to an HTTP proxy (in which both
+incoming and outgoing connections are on port 80) for 3 minutes:
+.RS
+.nf
+\fByconalyzer -p 80 -w proxy-out.1 -t180 '(dst port 80 and dst host proxy.domain.com) or (src port 80 and src host proxy.domain.com)'\fP
+.fi
+.RE
+.LP
+To have yconalyzer estimate RTT to the clients.
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1 -s2000 -n5 -T\fP
+.fi
+.RE
+.LP
+To print details about connections that took between 500 and 600 msecs
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1 -s100 -D500\fP
+.fi
+.RE
+.LP
+To get the percentage of connections that had a response time of 400msecs
+.RS
+.nf
+\fByconalyzer -p 80 -r http.1 -n1 -s400\fP
+.fi
+.RE
+.SH SAMPLE OUTPUT
+
+.in 0
+  \fIyconalyzer -p 80 -r http.1 -T\fP
+
+  Results of monitoring port 80 for 599.930000 seconds
+  Start time: Thu Jan  4 10:35:55 2007
+  End time: Thu Jan  4 10:45:55 2007
+  Total Connections (terminated by FIN): 6291
+  Avg Client Data: 3025 bytes
+  Avg Server Data: 23066 bytes
+  Avg conn time: 865 msecs
+  Avg Round Trip Time: 152 msecs
+  Total number of SYNs: 6382 (duplicates: 88)
+  Connections terminated by RESET: 37
+  Number of SYNs taken to establish connections: 6319
+  Avg no. of SYNs to establish a connection:  1.00
+  Number of unique connections that never completed: 0
+  Number of SYNs from incomplete connections: 0
+  Number of established connections in progress: 33 (12 may have been discarded)
+  Number of connections in closing state: 7
+  Distribution of SYNs to establsh connections (nSYNs:nConns): 1:6283,2:2,3:1,4:1,5:2,7:1,8:1,
+
+  Duration       NumConns        AvClient    AvServer   EstRtt  AvThruput
+  (msecs)                        (bytes)     (bytes)    (msecs)  (KB/s)
+    0 - 20          40( 0.64%)      903      7412         3     1613.58
+   20 - 40         109( 1.73%)      628      2257        30     89.67
+   40 - 60         181( 2.88%)     1350      3671        60     101.32
+   60 - 80         324( 5.15%)     1507      1273        66     39.25
+   80 - 100        279( 4.43%)     1352      4460        77     62.40
+  100 - 120        196( 3.12%)     1504      2856        93     38.85
+  120 - 140        183( 2.91%)     1528     10695        76     91.69
+  140 - 160        172( 2.73%)     1515      6077        84     49.94
+  160 - 180        155( 2.46%)     2407      5362        90     44.55
+  180 - 200        208( 3.31%)     1316      9759       104     58.02
+  200 - 220        162( 2.58%)     1672     14240       124     75.02
+  220 - 240        155( 2.46%)     4169     11908       136     69.50
+  240 - 260        157( 2.50%)     2592     18188       140     82.02
+  260 - 280        131( 2.08%)     2249     16619       142     69.07
+  280 - 300        137( 2.18%)     6110     11858       143     61.67
+  300 - 320        131( 2.08%)     1748     14579       130     52.05
+  320 - 340        124( 1.97%)     1783     17429       147     57.65
+  340 - 360        136( 2.16%)     1910     16969       164     53.03
+  360 - 380        139( 2.21%)     3945     20649       157     65.37
+  380 - 400        116( 1.84%)     1896     17909       156     50.16
+  400+            3056(48.58%)     4057     37201       203     47.08
+.SH RTT ESTIMATION
+If we make the assumption that the server side closes the connection first,
+and the client side closes the connection when it is done receiving all
+data, then the RTT can be estimated on the server as the difference between
+the time the server's FIN is sent and when the client's FIN is received.
+
+.SH SEE ALSO
+tcpdump(1)
+
+.SH BUGS
+When a machine has very low or no traffic on the port being monitored, it is possible
+that yconalyzer does not respond to \fI^C\fP.
+
+yconalyzer prints negative value for time when there is no traffic on the machine in 
+which it is run.
